@@ -2,11 +2,16 @@
 # Amazon EC2 Stored Credentials
 #
 $secretKey = (Get-JAMSCredential AmazonEC2).GetCredential($null,$null)
+$accessKey = (Get-JAMSCredential AmazonEC2).UserName
 
-$creds = New-AWSCredentials -AccessKey AKIAJB6SQOMBRYNOLIGA -SecretKey $secretKey.password
-Set-AWSCredentials -Credentials $creds -StoreAs DevonL
+$creds = New-AWSCredentials -AccessKey $accessKey -SecretKey $secretKey.password
 
-$storedCred = "DevonL"
+#
+# Cache our credentials for use by AWS.NET API
+#
+Set-AWSCredentials -Credentials $creds -StoreAs AmazonAWSPS
+
+$storedCred = "AmazonAWSPS"
 
 #
 # Define our arrays
@@ -17,11 +22,13 @@ $Ainfo = @()
 $publicIP = @()
 $keys = @()
 
-# Hash table for instances
+#
+# Hash table for instance names
+#
 $InstanceTable = @{}
 
 #
-# Import and parse the CSV file
+# Import and parse the CSV file of our instances and regions
 #
 Import-Csv C:\Amazon\Instances.csv |`
     ForEach-Object {
@@ -31,7 +38,7 @@ Import-Csv C:\Amazon\Instances.csv |`
 }
 
 #
-# Check the Status of each instance
+# How many instances did we pull in?
 #
 Write-Output $InstanceTable.Count
 
@@ -40,6 +47,9 @@ foreach($val in $InstanceTable.Keys)
     $keys += $val
 }
 
+#
+# Iterate through our hash table and determine the status of each EC2 instance
+#
 foreach($key in $keys)
 {
     $keyName = $key.Split('|')
@@ -70,12 +80,20 @@ foreach($key in $InstanceTable.Keys)
     if ($state -eq "running")
     {
         Write-Output "$instanceName is running."
+
+        #
+        # Instance is already running, let's make sure we have the right IP and update our queue for it
+        #
+        $publicIP += Get-EC2Instance -Instance $instanceName -StoredCredentials "$storedCred" -Region $regionName
     }
     if ($state -eq $null)
     {
         Write-Output "$instanceName is not running."
         Start-EC2Instance -InstanceIds $instanceName -StoredCredentials "$storedCred" -Region $regionName
 
+        #
+        # Sleep for 5 seconds to give that instance enough time to get an IP
+        #
         Start-Sleep 5
 
         $publicIP += Get-EC2Instance -Instance $instanceName -StoredCredentials "$storedCred" -Region $regionName
@@ -83,13 +101,20 @@ foreach($key in $InstanceTable.Keys)
 }
 
 #
-# Update our Batch Queue
+# Does our batch queue exist?
 #
-
+if (!(Test-Path JD:\Queues\AmazonAWS)) {
+    $Queue = New-Item JD:\Queues\AmazonAWS
+}
+else {
+    $Queue = Get-ChildItem JD:\Queues\AmazonAWS
+}
+#
+# Update our Batch Queue - we will iterate through our array of IP's to update each
+#
 $publicIP.Instances.Count
 
-$Queue = New-Item JD:\Queues\testQueue
-$Queue.StartedOn.Clear() 
+$Queue.StartedOn.Clear()
 foreach($IP in $publicIP)
 {
     $queueIP = $IP.Instances.PublicIpAddress
