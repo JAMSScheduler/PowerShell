@@ -19,7 +19,7 @@ Function Start-JAMSEC2($InputFile, $QueueName, $JobLimit, $StoredCredentials) {
         Write-Error "-JobLimit is a required value"
     }
     if ($JobLimit -isnot [int]) {
-        Write-Error "-JobLimit is a required value"
+        Write-Error "-JobLimit requires integer value"
     }
     else {
         #
