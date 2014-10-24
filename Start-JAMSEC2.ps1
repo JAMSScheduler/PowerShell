@@ -90,6 +90,9 @@ Function Start-JAMSEC2($InputFile, $QueueName, $JobLimit, $StoredCredentials) {
                 # Instance is already running, let's make sure we have the right IP and update our queue for it
                 #
                 $publicIP += Get-EC2Instance -Instance $instanceName -Credentials $StoredCredentials -Region $regionName
+            #    
+            # If instance is not running, start it.
+            #
             }
             if ($state -eq $null)
             {
