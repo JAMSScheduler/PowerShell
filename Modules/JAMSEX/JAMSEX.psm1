@@ -250,3 +250,89 @@ function Test-JAMSAgent ([string]$Name = "*", [string]$Server = "localhost"){
         }
     }
 }
+
+<#
+.Synopsis
+   Set permissions on JAMS folders
+.DESCRIPTION
+   Allows you to programmatically set and define permissions to JAMS Folders
+.EXAMPLE
+   Set-JAMSPermission -folderName 'Samples' -abort $true -addJobs $true -change $true -changeJobs $true -control $true -debugPerm $true -delete $true -deleteJobs $true -inquire $true -inquireJobs $true -manage $true -monitor $true -submit $true -user 'MVP\Admins'
+.EXAMPLE
+   Set-JAMSPermission -folderName 'Samples' -abort $false -addJobs $false -change $false -changeJobs $false -control $false -debugPerm $false -delete $false -deleteJobs $false -inquire $true -inquireJobs $true -manage $false -monitor $true -submit $false -user 'MVP\Readers'
+#>
+
+function Set-JAMSPermission
+{
+    PARAM
+    (
+        [parameter(Mandatory=$True)]
+        [STRING]$folderName,
+        [parameter(Mandatory=$True)]
+        [bool]$abort = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$addJobs = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$change = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$changeJobs = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$control = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$debugPerm = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$delete = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$deleteJobs = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$inquire = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$inquireJobs = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$manage = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$monitor = $false,
+        [parameter(Mandatory=$True)]
+        [bool]$submit = $false,
+        [parameter(Mandatory=$True)]
+        [STRING]$user
+    )
+    begin {
+    }
+    
+    process {
+        if (Test-Path $folderName)
+        {
+            Write-Verbose "$folderName found."
+            $Folder = Get-Item -Path $folderName
+        }
+        else
+        {
+            Write-Error "$folderName not found!"
+        }
+
+        $ace = New-Object MVPSI.JAMS.GenericACE
+        $ace.Identifier = $user
+    
+        $ace.AccessBits = [MVPSI.JAMS.FolderAccess]([int][MVPSI.JAMS.FolderAccess]::Abort * $abort +
+            [int][MVPSI.JAMS.FolderAccess]::AddJobs * $addJobs +
+            [int][MVPSI.JAMS.FolderAccess]::changeJobs * $changeJobs +
+            [int][MVPSI.JAMS.FolderAccess]::change * $change +
+            [int][MVPSI.JAMS.FolderAccess]::control * $control +
+            [int][MVPSI.JAMS.FolderAccess]::debug * $debugPerm +
+            [int][MVPSI.JAMS.FolderAccess]::delete * $delete +
+            [int][MVPSI.JAMS.FolderAccess]::deleteJobs * $deleteJobs +
+            [int][MVPSI.JAMS.FolderAccess]::inquire * $inquire +
+            [int][MVPSI.JAMS.FolderAccess]::inquireJobs * $inquireJobs +
+            [int][MVPSI.JAMS.FolderAccess]::manage * $manage +
+            [int][MVPSI.JAMS.FolderAccess]::monitor * $monitor +
+            [int][MVPSI.JAMS.FolderAccess]::submit * $submit)
+
+        $Folder.ACL.GenericACL.Add($ace)
+
+        $Folder.Update()
+    }
+    end
+    {
+    }
+}
