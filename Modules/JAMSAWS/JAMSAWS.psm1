@@ -1,4 +1,4 @@
-<#
+﻿<#
 .Synopsis
    Start a list of your Amazon EC2 instances defined within a CSV file
 .DESCRIPTION
@@ -8,55 +8,70 @@
 .EXAMPLE
    Start-JAMSEC2 -InputFile C:\AmazonEC2Instances.csv -QueueName AmazonEC2SQL -JobLimit 25 -StoredCredentials $AmazonAWS
 #>
-Function Start-JAMSEC2($InputFile, $QueueName, $JobLimit, $StoredCredentials) {
-    if ($InputFile -eq $null) {
-        Write-Error "-InputFile is a required value"
+Function Start-JAMSEC2() {
+    [CmdletBinding(SupportsShouldProcess=$true, 
+                  PositionalBinding=$false,
+                  HelpUri = 'http://support.JAMSScheduler.com/',
+                  ConfirmImpact='Medium')]
+    [OutputType([String])]
+    Param (
+    [Parameter(Mandatory=$true, 
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true, 
+                   ValueFromRemainingArguments=$false, 
+                   Position=0,
+                   ParameterSetName='InputFile')]
+        [ValidateNotNullOrEmpty()]
+        $InputFile,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [ValidateNotNullOrEmpty()]
+        $QueueName,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [ValidateNotNullOrEmpty()]
+        [int]
+        $JobLimit,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [ValidateNotNullOrEmpty()]
+        $StoredCredentials
+    )
+
+    Begin 
+    {
+        Write-Verbose "Parsing $InputFile for Instance and Region data"
     }
-    if ($QueueName -eq $null) {
-        Write-Error "-QueueName is a required value"
-    }
-    if ($JobLimit -eq $null) {
-        Write-Error "-JobLimit is a required value"
-    }
-    if ($JobLimit -isnot [int]) {
-        Write-Error "-JobLimit requires integer value"
-    }
-    else {
-        #
+    Process 
+    {
         # Define our arrays
-        #
         $Instance = @()
         $Region = @()
         $Ainfo = @()
         $publicIP = @()
         $keys = @()
 
-        #
         # Hash table for instance names
-        #
         $InstanceTable = @{}
 
-        #
         # Import and parse the CSV file of our instances and regions
-        #
         Import-Csv $InputFile |`
         ForEach-Object {
             $InstanceTable.Add(("{0}|{1}" -f $_.Instance,$_.Region), "OFF")
         }
 
-        #
         # How many instances did we pull in?
-        #
-        Write-Verbose $InstanceTable.Count
+        Write-Debug $InstanceTable.Count
 
         foreach($val in $InstanceTable.Keys)
         {
             $keys += $val
         }
 
-        #
         # Iterate through our hash table and determine the status of each EC2 instance
-        #
         foreach($key in $keys)
         {
             $keyName = $key.Split('|')
@@ -67,7 +82,7 @@ Function Start-JAMSEC2($InputFile, $QueueName, $JobLimit, $StoredCredentials) {
             Write-Verbose $regionName
     
             # Get the instance
-            $InstanceTable[$key] = Get-EC2InstanceStatus -InstanceIds $instanceName -Credentials $StoredCredentials -Region $regionName
+            $InstanceTable[$key] = Get-EC2InstanceStatus -InstanceIds $instanceName -Credential $StoredCredentials -Region $regionName
         }
 
         foreach($key in $InstanceTable.Keys)
@@ -86,38 +101,30 @@ Function Start-JAMSEC2($InputFile, $QueueName, $JobLimit, $StoredCredentials) {
             {
                 Write-Verbose "$instanceName is running."
 
-                #
                 # Instance is already running, let's make sure we have the right IP and update our queue for it
-                #
-                $publicIP += Get-EC2Instance -Instance $instanceName -Credentials $StoredCredentials -Region $regionName
+                $publicIP += Get-EC2Instance -Instance $instanceName -Credential $StoredCredentials -Region $regionName
             }
             if ($state -eq $null)
             {
                 Write-Verbose "$instanceName is not running."
-                Start-EC2Instance -InstanceIds $instanceName -Credentials $StoredCredentials -Region $regionName
+                Start-EC2Instance -InstanceIds $instanceName -Credential $StoredCredentials -Region $regionName
 
-                #
                 # Sleep for 5 seconds to give that instance enough time to get an IP
-                #
                 Write-Verbose "Sleeping for 5 seconds to get IP."
                 Start-Sleep 5
 
-                $publicIP += Get-EC2Instance -Instance $instanceName -Credentials $StoredCredentials -Region $regionName
+                $publicIP += Get-EC2Instance -Instance $instanceName -Credential $StoredCredentials -Region $regionName
             }
         }
 
-        #
         # Does our batch queue exist?
-        #
         if (!(Test-Path JD:\Queues\$QueueName)) {
             $Queue = New-Item JD:\Queues\$QueueName
         }
         else {
             $Queue = Get-ChildItem JD:\Queues\$QueueName
         }
-        #
         # Update our Batch Queue - we will iterate through our array of IP's to update each
-        #
         Write-Verbose $publicIP.Instances.Count
 
         $Queue.StartedOn.Clear()
@@ -128,6 +135,9 @@ Function Start-JAMSEC2($InputFile, $QueueName, $JobLimit, $StoredCredentials) {
         }
         $Queue.JobLimit = $JobLimit
         $Queue.Update()
+    }
+    End
+    {
     }
 }
 
@@ -141,58 +151,69 @@ Function Start-JAMSEC2($InputFile, $QueueName, $JobLimit, $StoredCredentials) {
 .EXAMPLE
    Stop-JAMSEC2 -InputFile C:\AmazonEC2Instances.csv -StoredCredentials $AmazonAWS
 #>
-Function Stop-JAMSEC2($InputFile, $StoredCredentials) {
-    if ($InputFile -eq $null) {
-        Write-Error "-InputFile is a required value"
+Function Stop-JAMSEC2() {
+    [CmdletBinding(SupportsShouldProcess=$true, 
+                  PositionalBinding=$false,
+                  HelpUri = 'http://support.JAMSScheduler.com/',
+                  ConfirmImpact='Medium')]
+    [OutputType([String])]
+    Param (
+    [Parameter(Mandatory=$true, 
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true, 
+                   ValueFromRemainingArguments=$false, 
+                   Position=0,
+                   ParameterSetName='InputFile')]
+        [ValidateNotNullOrEmpty()]
+        $InputFile,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [ValidateNotNullOrEmpty()]
+        $StoredCredentials
+    )
+
+    Begin 
+    {
+        Write-Verbose "Parsing $InputFile for Instance and Region data"
     }
-    if ($StoredCredentials -eq $null) {
-        Write-Error "-StoredCredentials is a required value"
-    }
-    else {
-        #
+
+    Process 
+    {
         # Define our arrays
-        #
         $Instance = @()
         $Region = @()
         $keys = @()
 
-        #
         # Hash table for instance names
-        #
         $InstanceTable = @{}
 
-        #
         # Import and parse the CSV file of our instances and regions
-        #
         Import-Csv $InputFile |`
         ForEach-Object {
             $InstanceTable.Add(("{0}|{1}" -f $_.Instance,$_.Region), "OFF")
         }
 
-        #
         # How many instances did we pull in?
-        #
-        Write-Verbose $InstanceTable.Count
+        Write-Debug $InstanceTable.Count
 
         foreach($val in $InstanceTable.Keys)
         {
             $keys += $val
         }
 
-        #
         # Iterate through our hash table and determine the status of each EC2 instance
-        #
         foreach($key in $keys)
         {
             $keyName = $key.Split('|')
             $instanceName = $keyName[0]
             $regionName = $keyName[1]
 
-            Write-Verbose $instanceName
-            Write-Verbose $regionName
+            Write-Debug $instanceName
+            Write-Debug $regionName
     
             # Get the instance
-            $InstanceTable[$key] = Get-EC2InstanceStatus -InstanceIds $instanceName -Credentials $StoredCredentials -Region $regionName
+            $InstanceTable[$key] = Get-EC2InstanceStatus -InstanceIds $instanceName -Credential $StoredCredentials -Region $regionName
         }
 
         foreach($key in $InstanceTable.Keys)
@@ -211,16 +232,17 @@ Function Stop-JAMSEC2($InputFile, $StoredCredentials) {
             {
                 Write-Verbose "$instanceName is running."
 
-                #
                 # Instance is running, stop the EC2 instance
-                #
-                Stop-EC2Instance -Instance $instanceName -Credentials $StoredCredentials -Region $regionName
+                Stop-EC2Instance -Instance $instanceName -Credential $StoredCredentials -Region $regionName
             }
             if ($state -eq $null)
             {
                 Write-Verbose "$instanceName is not running."
             }
         }
+    }
+    End
+    {
     }
 }
 
@@ -230,34 +252,50 @@ Function Stop-JAMSEC2($InputFile, $StoredCredentials) {
 .DESCRIPTION
    Connect and store an Amazon AWS Session into a PowerShell variable utilizing a stored JAMS User
 .SYNTAX
-   Connect-JAMSAWSLogin -JAMSCred AmazonAWSLogin -SessionName AmazonAWS
+   Connect-JAMSAWSLogin -JAMSCredential AmazonAWSLogin -SessionName AmazonAWS
 .EXAMPLE
-   $AmazonAWS = Connect-JAMSAWSLogin -JAMSCred AmazonAWSLogin -SessionName AmazonAWS
+   $AmazonAWS = Connect-JAMSAWSLogin -JAMSCredential AmazonAWSLogin -SessionName AmazonAWS
 #>
-Function Connect-JAMSAWSLogin($JAMSCred, $SessionName) {
-     if ($JAMSCred -eq $null) {
-        Write-Error "-JAMSCred is a required value"
+Function Connect-JAMSAWSLogin() {
+    [CmdletBinding(SupportsShouldProcess=$true, 
+                  PositionalBinding=$false,
+                  HelpUri = 'http://support.JAMSScheduler.com/',
+                  ConfirmImpact='Medium')]
+    [OutputType([String])]
+    Param (
+    [Parameter(Mandatory=$true, 
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true, 
+                   ValueFromRemainingArguments=$false, 
+                   Position=0,
+                   ParameterSetName='JAMSCredential')]
+        [ValidateNotNullOrEmpty()]
+        $JAMSCredential,
+
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [ValidateNotNullOrEmpty()]
+        $SessionName
+    )
+    Begin
+    {
     }
-    if ($SessionName -eq $null) {
-        Write-Error "-SessionName is a required value"
-    }
-    else {
-        #
+    Process 
+    {
         # Amazon EC2 Stored Credentials
-        #
-        $secretKey = (Get-JAMSCredential $JAMSCred).GetCredential($null,$null)
-        $accessKey = (Get-JAMSCredential $JAMSCred).UserName
+        $secretKey = (Get-JAMSCredential $JAMSCredential).GetCredential($null,$null)
+        $accessKey = (Get-JAMSCredential $JAMSCredential).UserName
 
         $creds = New-AWSCredentials -AccessKey $accessKey -SecretKey $secretKey.password
 
-        #
         # Cache our credentials for use by AWS.NET API
-        #
-        Set-AWSCredentials -Credentials $creds -StoreAs $SessionName
+        Set-AWSCredentials -Credential $creds -StoreAs $SessionName
 
         $storedCred = $SessionName
         
         return $creds
-
+    }
+    End
+    {
     }
 }
