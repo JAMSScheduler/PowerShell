@@ -65,6 +65,24 @@ function New-JAMSSQLDependency
 
     Begin
     {
+        # Check and see if the SQLPS Module has been loaded
+
+        $Modules = Get-Module
+
+        if ($Modules.Name -contains "SQLPS") {
+            Write-Verbose "SQLPS Module already loaded..."
+        }
+        else {
+            Write-Verbose "Loading the SQLPS Module..."
+
+            Import-Module SQLPS -WarningAction SilentlyContinue -ErrorVariable SQLModError
+
+            foreach ($err in $SQLModError) {
+                Write-Error $err
+            }
+        }
+
+        # Starting the watch
         Write-Verbose "Started waiting for SQL $Table at $(Get-Date -format 'u')"
         Write-Verbose "Timeout is set to $timeout"
         $absoluteTimeout = Get-Date 
@@ -79,21 +97,6 @@ function New-JAMSSQLDependency
 
         do
         {
-            $Modules = Get-Module
-
-            if ($Modules.Name -contains "SQLPS") {
-                Write-Verbose "SQLPS Module already loaded..."
-            }
-            else {
-                Write-Verbose "Loading the SQLPS Module..."
-
-                Import-Module SQLPS -WarningAction SilentlyContinue -ErrorVariable SQLModError
-
-                foreach ($err in $SQLModError) {
-                    Write-Error $err
-                }
-            }
-
             # Run the query and capture any result
             $return = Invoke-Sqlcmd -ServerInstance "$Server" -Database $Database -Query "SELECT $Column FROM $Table"
             Write-Verbose "Checking for $NewValue in database $Database to table $Table in column $Column"
@@ -126,4 +129,4 @@ function New-JAMSSQLDependency
         while(-not $weHaveMatch)
      }
     End{}
-} 
+}
