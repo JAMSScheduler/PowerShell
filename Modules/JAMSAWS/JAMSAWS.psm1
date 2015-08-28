@@ -521,7 +521,7 @@ function Wait-ForS3Item
 
                         throw 'Timeout while waiting for files'
                     }
-                    Write-Verbose "$Interval elapsed... Checking again"
+                    Write-Verbose "$Interval seconds elapsed... Checking again"
                     
                     Start-Sleep -seconds $interval
                     
@@ -551,7 +551,7 @@ function Wait-ForS3Item
                     
                             throw 'Timeout while waiting for files'
                         }
-                        Write-Verbose "$Interval elapsed... Checking again"
+                        Write-Verbose "$Interval seconds elapsed... Checking again"
                     
                         Start-Sleep -seconds $interval
                     
