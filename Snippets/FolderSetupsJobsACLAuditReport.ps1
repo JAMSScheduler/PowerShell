@@ -6,7 +6,8 @@ Import-Module JAMS
 
 $JAMSDefaultServer = 'JAMSServerName'
 
-#New-PSDrive JD JAMS Localhost
+###Uncomment if you have not create a PS Drive already:
+###New-PSDrive JD JAMS Localhost
 
 ###We loop through our folder list and we need to specify the object type 'Folder'
 ###This will return a list of Folders and each ACL and their permissions only if there are ACL's assigned to those folders.
