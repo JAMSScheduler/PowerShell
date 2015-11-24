@@ -14,5 +14,13 @@ $trig = New-Item JD:\Samples\myTestTriggerName -ItemType trigger
 $event = New-Object -TypeName MVPSI.JAMS.TriggerEventFile
 $event.FileName = "C:\TestDir\*.ZZZ"
 
+#
+# Create an Action
+#
+$action = New-Object -TypeName MVPSI.JAMS.TriggerActionSetup
+$action.SetupName = "\Folder\SetupName"
+
+
+$trig.Actions.Add($action);
 $trig.Events.Add($event);
 $trig.Update();
