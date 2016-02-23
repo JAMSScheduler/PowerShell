@@ -5,7 +5,7 @@
    Sends a single message to an ActiveMQ queue. The message must be formatted
    as the reader of the queue expects. You should not include the "body=" tag.
 .EXAMPLE
-   Send-ActiveMessage -user joe -queue invoice -server sample.bigco.com -message $invoiceData
+   Send-ActiveMQMessage -user joe -queue invoice -server sample.bigco.com -message $invoiceData
 .INPUTS
    Inputs to this cmdlet (if any)
 .OUTPUTS
@@ -61,7 +61,7 @@ function Send-ActiveMQMessage
 .DESCRIPTION
    Readss a single message from an ActiveMQ queue.
 .EXAMPLE
-   $newData = Receive-ActiveMessage -user joe -queue invoice -server sample.bigco.com -message $invoiceData
+   $newData = Receive-ActiveMQMessage -user joe -queue invoice -server sample.bigco.com -message $invoiceData
 .INPUTS
    Inputs to this cmdlet (if any)
 .OUTPUTS
