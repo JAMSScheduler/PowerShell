@@ -17,6 +17,7 @@ cmdlets
  
 Descriptions
 ==========
+```
 .Synopsis
    Start a list of your Amazon EC2 instances defined within a CSV file
 .DESCRIPTION
@@ -61,4 +62,4 @@ Descriptions
    Submit-JAMSJobOnEC2Tag -Tag ActiveMQ -JAMSJob ServiceRelay -RunAs RHRootML -Region 'us-east-1' -StoredCredentials $AWS
 .EXAMPLE
    Submit-JAMSJobOnEC2Tag -Tag JAMSDataLD -JAMSJob ReportBatch -RunAs centos -Region 'us-west-2' -StoredCredentials $AWSSession -SubmitHeld -Verbose
-
+```
