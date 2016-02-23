@@ -1,4 +1,4 @@
-JAMSAWS
+ACTIVEMQ
 ==========
 
 This module is utilized to send or receive messages between JAMS and an ActiveMQ server.
