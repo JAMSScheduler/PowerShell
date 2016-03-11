@@ -183,61 +183,79 @@ function Remove-JAMSObjects
 .EXAMPLE
    $AgentStatus = Test-JAMSAgent -Name SQLAgent1 -Server MVPJAMSProd
 #>
-function Test-JAMSAgent ([string]$Name = "*", [string]$Server = "localhost"){
+function Test-JAMSAgent {
+    [CmdletBinding(DefaultParameterSetName='Name', 
+                  SupportsShouldProcess=$false, 
+                  PositionalBinding=$false,
+                  HelpUri = 'http://support.JAMSScheduler.com/',
+                  ConfirmImpact='None')]
+    [OutputType([System.IO.FileSystemInfo])]
+    Param
+    (
+        # Specify the SQL Server Instance
+        [Parameter(Mandatory=$true, 
+                   ValueFromPipeline=$true,
+                   ValueFromPipelineByPropertyName=$true, 
+                   ValueFromRemainingArguments=$false, 
+                   Position=0,
+                   ParameterSetName='Name')]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name
+     )
+
+    #  Set up our variables
+    $agent = Get-JAMSAgent $Name -ErrorAction SilentlyContinue
+
+    if ($agent -eq $null) {
+        Write-Error "$Name not found"
+    }
+    $Name = $agent.AgentName
     #
-    #  Create a list of JAMS Agents
+    #   Write out message to console
     #
-    $agentList = Get-JAMSAgent $Name
+    Write-Verbose "Checking Agent $Name" 
     #
-    #  Loop through agent list
+    #   Check agent's Platform property
     #
-    Foreach($agent in $agentList){
+    if($agent.Platform -eq 'Windows'){
         #
-        #   Write out message to console
+        # Check if the Agent Machine is Online
         #
-        Write-Host 'Checking Agent on' $agent.AgentName
+        if(Test-Connection -ComputerName $agent.AgentName –Quiet –Count 2){
         #
-        #   Check agent's Platform property
+        #   Get service Object
         #
-        if($agent.Platform -eq 'Windows'){
+        $agentObject = Get-Service *JAMSAgent -ComputerName $agent.AgentName
+        #
+        #   Check if JAMSAgent is Stopped
+        #
+        if($agentObject.Status -eq 'Stopped'){
+            return 'Offline'
+            Write-Verbose "Enabling JAMS Agent Service on $agentObject.MachineName"
             #
-            # Check if the Agent Machine is Online
+            #   Start service with Object as input
             #
-            if(Test-Connection -ComputerName $agent.AgentName –Quiet –Count 2){
-                #
-                #   Get service Object
-                #
-                $agentObject = Get-Service *JAMSAgent -ComputerName $agent.AgentName
-                #
-                #   Check if JAMSAgent is Stopped
-                #
-                if($agentObject.Status -eq 'Stopped'){
-                    Return "Offline"
-                    Write-Host "Enabling JAMS Agent Service on $agentObject.MachineName"
-                    #
-                    #   Start service with Object as input
-                    #
-                    Start-Service -InputObject $agentObject
-                }
-                Return "Online"
-            } else {
-                Return "Offline"
-            }
-        }else{
-            #
-            #   Non-windows do a Test-Connection to see if it responds
-            #
-            if(Test-Connection -ComputerName $agent.AgentName –Quiet –Count 2){
-                Return "Online"
-            }else{
-                #
-                #   Write message to console that server is down
-                #
-                Return "Offline"
-            }
+            Start-Service -InputObject $agentObject
+        }
+        Return 'Online'
+        } else {
+            Return 'Offline'
         }
     }
-}
+    else{
+        #
+        #   Non-windows do a Test-Connection to see if it responds
+        #
+        if(Test-Connection -ComputerName $agent.AgentName –Quiet –Count 2){
+            Return 'Online'
+        }
+        else{
+            #
+            #   Write message to console that server is down
+            #
+            return 'Offline'
+        }
+    }
 
 <#
 .Synopsis
