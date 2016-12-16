@@ -39,14 +39,19 @@ function Send-ActiveMQMessage
         # specify message
         [Parameter(Mandatory=$true)]
         [ValidateNotNullOrEmpty()]
-        $Message
+        $Message,
+
+        # specify JAMS server
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNullOrEmpty()]
+        $JAMSServer = $JAMSDefaultServer
     )
     Begin
     {
     }
     Process
     {
-        $cd = [PSCredential](Get-JAMSCredential $User)
+        $cd = [PSCredential](Get-JAMSCredential $User -Server $JAMSServer)
         $fullBody = "body=" + $Message
         Invoke-RestMethod "http://${MQserver}:8161/api/message?destination=queue://${Queue}" -body $fullBody -Method POST -Credential $cd
     }
@@ -59,9 +64,9 @@ function Send-ActiveMQMessage
 .Synopsis
    Receive a message from an ActiveMQ queue.
 .DESCRIPTION
-   Readss a single message from an ActiveMQ queue.
+   Reads a single message from an ActiveMQ queue.
 .EXAMPLE
-   $newData = Receive-ActiveMQMessage -user joe -queue invoice -server sample.bigco.com -message $invoiceData
+   $newData = Receive-ActiveMQMessage -user joe -queue invoice -mqserver sample.bigco.com
 .INPUTS
    Inputs to this cmdlet (if any)
 .OUTPUTS
@@ -95,7 +100,12 @@ function Receive-ActiveMQMessage
         # specify clientID
         [Parameter(Mandatory=$false)]
         [ValidateNotNullOrEmpty()]
-        $ClientID=''
+        $ClientID='',
+
+        # specify JAMS server
+        [Parameter(Mandatory=$false)]
+        [ValidateNotNullOrEmpty()]
+        $JAMSServer = $JAMSDefaultServer
     )
     Begin
     {
@@ -110,7 +120,7 @@ function Receive-ActiveMQMessage
     }
     Process
     {
-        $cd = [PSCredential](Get-JAMSCredential $User)
+        $cd = [PSCredential](Get-JAMSCredential $User -Server $JAMSServer)
         $msg = Invoke-RestMethod "http://${MQserver}:8161/api/message?destination=queue://${Queue}&${ConsumeMethod}" -Method Get -Credential $cd
         write-output $msg
     }
