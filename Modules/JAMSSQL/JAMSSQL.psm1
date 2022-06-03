@@ -98,7 +98,7 @@ function New-JAMSSQLDependency
         do
         {
             # Run the query and capture any result
-            $return = Invoke-Sqlcmd -ServerInstance "$Server" -Database $Database -Query "SELECT $Column FROM $Table"
+            $return = Invoke-Sqlcmd -ServerInstance "$Server" -Database $Database -Query "SELECT TOP 1 $Column FROM $Table WHERE $Column = $NewValue"
             Write-Verbose "Checking for $NewValue in database $Database to table $Table in column $Column"
             
 	        #
