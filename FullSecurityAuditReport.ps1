@@ -460,7 +460,7 @@ foreach($accessType in $accessitems)
         
             if (!($agent.ACL.IsNull)) {
                 foreach ($ace in $agent.ACL.GenericACL){
-                    $accessObject = GenerateAccessObject "Agent: $($agent.Name)" $AGENT_ACCESS $ace
+                    $accessObject = GenerateAccessObject "Agent: $($agent.AgentName)" $AGENT_ACCESS $ace
                     if($accessObject){
                         $null = $auditObjects.Add($accessObject)
                         $accessObject=$null
