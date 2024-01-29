@@ -1,23 +1,24 @@
 ﻿Import-Module JAMS
 ## Change localhost in below line to be JAMS Server name, if not running on scheduler.
-New-PSDrive JD JAMS localhost -ErrorAction SilentlyContinue
+$JAMSServer = "localhost"
+New-PSDrive JD JAMS $JAMSServer -ErrorAction SilentlyContinue
 
 ## Change path in line below to point to the job that should be submitted
-$SubmitJob = Get-Item JD:\Samples\Sleep60 
+$SubmitJob = Get-Item JD:\Samples\SleepJob 
 
-$submission = Submit-JAMSEntry -InputJob $SubmitJob -Server localhost  ## See comment on line 2. Same applies here to server
+$submission = Submit-JAMSEntry -InputJob $SubmitJob -Server $JAMSServer  ## See comment on line 2. Same applies here to server
 
 #Need a small buffer to safely check the executing status of the job
 start-sleep 1
 
-$entry = Get-JAMSEntry -Entry $submission.JAMSEntry 
+$entry = Get-JAMSEntry -Entry $submission.JAMSEntry -Server $JAMSServer
 
 If ($entry.CurrentState -eq [MVPSI.JAMS.EntryState]::Executing ){
     # Wait for the job to complete
-    Wait-JAMSEntry -Name $entry.Name -State Executing
+    Wait-JAMSEntry -Name $entry.JAMSEntry -State Executing -Server $JAMSServer
     }
 # Get updated information about the submitted job
-$entry = Get-JAMSEntry -Entry $submission.JAMSEntry 
+$entry = Get-JAMSEntry -Entry $submission.JAMSEntry -Server $JAMSServer
 
 write-host $entry.FinalStatusCode
 
