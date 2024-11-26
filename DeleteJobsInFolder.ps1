@@ -55,5 +55,5 @@ foreach($job in $jobs){
         RemoveJob "JD:$($job.QualifiedName)"
     }
 }
-    
-Remove-Item $folderToRemove -Confirm:$false -Force -Recurse
+# Uncomment below line to delete folder that jobs were removed from.    
+#Remove-Item $folderToRemove -Confirm:$false -Force -Recurse
